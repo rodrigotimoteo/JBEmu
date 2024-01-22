@@ -53,7 +53,7 @@ public class Word implements BitOperations {
     /**
      * Method responsible for changing the value of a specific bit to 1
      *
-     * @param bit bit to change
+     * @param bit to change
      */
     @Override
     public void setBit(int bit) {
@@ -67,7 +67,7 @@ public class Word implements BitOperations {
     /**
      * Method responsible for changing the value of a specific bit to 0
      *
-     * @param bit bit to change
+     * @param bit to change
      */
     @Override
     public void resetBit(int bit) {
@@ -78,12 +78,25 @@ public class Word implements BitOperations {
     }
 
     /**
-     * Method responsible for testing (true if 1) a specific bit
+     * Method responsible for testing (true if 1, false otherwise) a specific bit
      *
-     * @param bit bit to test
+     * @param bit to test
      */
     @Override
     public boolean testBit(int bit) {
-        return false;
+        if(bit < 0 || bit > 7)
+            throw new IllegalArgumentException("Invalid bit");
+
+        return (getValue() & (1 << bit) >> bit) != 0;
+    }
+
+    /**
+     * Overrides toString in order to get the value stored in the object
+     *
+     * @return String of the value inside specific word
+     */
+    @Override
+    public String toString() {
+        return String.valueOf(getValue());
     }
 }
