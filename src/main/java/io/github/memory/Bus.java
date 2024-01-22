@@ -1,5 +1,8 @@
 package io.github.memory;
 
+import io.github.cpu.CPU;
+import io.github.ppu.PPU;
+
 /**
  * Responsible for interactions between the various system components and
  * storing the main memory
@@ -10,32 +13,104 @@ package io.github.memory;
 
 public class Bus {
 
-    private class Memory {
+    /**
+     * Stores a reference to the CPU
+     */
+    private CPU cpu;
 
-        private final MemoryModule rom;
-//        private final MemoryModule vram;
-//        private final MemoryModule eram;
-//        private final MemoryModule wram;
-        private final MemoryModule oam;
-        private final MemoryModule bottomRegisters;
+    /**
+     * Stores a reference to the PPU
+     */
+    private PPU ppu;
 
-        public Memory(MemoryModule rom) {
-            this.rom = rom;
+    /**
+     * Stores a reference to the Memory Manager
+     */
+    private final MemoryManager memory;
 
+    /**
+     * Stores whether it should run in CGB mode
+     */
+    private final boolean cgb;
 
+    /** Constructor Method
+     *
+     * <p>Responsible for initializing the Bus creating the Memory Space in this
+     * instance</p>
+     *
+     * @param cgb whether to use CGB mode (true if yes false otherwise)
+     * @param rom memory module corresponding for specific Memory Bank Controller
+     *            with the rom already written to it
+     */
+    public Bus(boolean cgb, MemoryModule rom) {
+        this.cgb = cgb;
 
+        memory = new MemoryManager(this, rom);
+    }
 
-//            wram = new MemoryModule()
-            oam = new MemoryModule(0xA0, ReservedAddresses.OAM_START.getAddress());
-            bottomRegisters = new MemoryModule(0x100, ReservedAddresses.IO_START.getAddress());
-        }
+    /**
+     * Setter to assign the bus cpu access
+     *
+     * @param cpu reference for this instance's cpu
+     */
+    public void setCpu(CPU cpu) {
+        if(this.cpu == null) this.cpu = cpu;
+    }
 
+    /**
+     * Setter to assign the bus ppu access
+     *
+     * @param ppu reference for this instance's ppu
+     */
+    public void setPpu(PPU ppu) {
+        if(this.ppu == null) this.ppu = ppu;
+    }
 
+    /**
+     * Returns whether to run or not in CGB mode
+     *
+     * @return boolean (true if CGB mode false otherwise)
+     */
+    public boolean isCgb() {
+        return cgb;
+    }
 
+    /**
+     * Changes value of specific word based on its address
+     *
+     * @param address where to change the value
+     * @param value to assign to the word
+     */
+    public void setValue(int address, int value) {
+        memory.setValue(address, value);
+    }
+
+    /**
+     * Gets the value of specific word based on its address
+     *
+     * @param address where to change the value
+     * @return value stored in specific address
+     */
+    public int getValue(int address) {
+        return memory.getValue(address);
+    }
+
+    /**
+     * Gets the specific word based on its address
+     *
+     * @param address where to retrieve the value
+     * @return Word stored in specific address
+     */
+    public Word getWord(int address) {
+        return memory.getWord(address);
     }
 
 
 
 
 
+
+
 }
+
+

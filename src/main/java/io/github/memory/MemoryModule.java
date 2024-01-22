@@ -1,6 +1,7 @@
 package io.github.memory;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 /**
  * Represents a single memory module, the full memory of the system is a set of
@@ -83,6 +84,36 @@ public class MemoryModule implements MemoryManipulation {
 
         this.offset = offset;
         this.simultaneousBanks = simultaneousBanks;
+
+        if(simultaneousBanks == 2)
+            activeBank = 1;
+    }
+
+    /** Constructor Method
+     *
+     * <p>Creates a new Memory Module being able to use more than one
+     * simultaneous memory bank</p>
+     *
+     * @param size of the memory module to create
+     * @param content to assign content to this module
+     * @param simultaneousBanks accessible at a time
+     * @param offset to find desired address (due to no alignment between address
+     *               space and arrays)
+     * @param banks number of total banks used
+     */
+    public MemoryModule(byte[] content, int size, int simultaneousBanks, int offset, int banks) {
+        numberOfBanks = banks;
+
+        memory = new Word[banks][size];
+        initMemory();
+
+        assignMemory(content, size);
+
+        this.offset = offset;
+        this.simultaneousBanks = simultaneousBanks;
+
+        if(simultaneousBanks == 2)
+            activeBank = 1;
     }
 
     /**
@@ -91,6 +122,17 @@ public class MemoryModule implements MemoryManipulation {
      */
     private void initMemory() {
         Arrays.stream(memory).forEach(row -> Arrays.fill(row, new Word()));
+    }
+
+    /**
+     * Populates the memory in this module with a byte matrix
+     *
+     * @param content matrix containing information to populate module with
+     * @param size of each bank
+     */
+    private void assignMemory(byte[] content, int size) {
+        IntStream.range(0, content.length).forEach(i -> memory[i / size][i % size]
+                .setValue(content[i]));
     }
 
     /**
@@ -189,6 +231,10 @@ public class MemoryModule implements MemoryManipulation {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
