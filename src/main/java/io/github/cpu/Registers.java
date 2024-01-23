@@ -1,5 +1,6 @@
 package io.github.cpu;
 
+import io.github.memory.Bus;
 import io.github.memory.Word;
 
 import java.util.HashMap;
@@ -11,7 +12,12 @@ import java.util.HashMap;
  * @author rodrigotimoteo
  */
 
-public class CPURegisters {
+public class Registers {
+
+    /**
+     * Stores a reference to the bus to communicate with other components
+     */
+    private final Bus bus;
 
     /**
      * Stores an Array with the possible register names (8 registers)
@@ -27,7 +33,7 @@ public class CPURegisters {
     /**
      * Stores the CPU flags corresponding to register F
      */
-    private final CPUFlags flags = new CPUFlags();
+    private final Flags flags;
 
     /**
      * Stores the PC (and assigns it to the default value at the end of the boot
@@ -44,8 +50,13 @@ public class CPURegisters {
     /**
      * Creates all the objects to insert in the HashMap to store the registers
      * as well as initializes them to their default value at startup
+     *
+     * @param bus reference to this instances bus
      */
-    public CPURegisters() {
+    public Registers(Bus bus) {
+        this.bus = bus;
+        flags = new Flags(bus);
+
         for(String name : registerNames)
             registers.put(name, new Word());
 
@@ -57,7 +68,7 @@ public class CPURegisters {
      *
      * @return cpu flags object
      */
-    public CPUFlags getFlags() {
+    public Flags getFlags() {
         return flags;
     }
 
@@ -168,21 +179,41 @@ public class CPURegisters {
         return (getRegister("H").getValue() << 8) + getRegister("L").getValue();
     }
 
+    /**
+     * Setter for 16 bit word with the AF format (A register followed by F register)
+     *
+     * @param value to assign the 16bit word
+     */
     public void setAF(int value) {
         setRegister("A", (value & 0xff00) >> 8);
         setRegister("F", value & 0x00f0);
     }
 
+    /**
+     * Setter for 16 bit word with the BC format (B register followed by C register)
+     *
+     * @param value to assign the 16bit word
+     */
     public void setBC(int value) {
         setRegister("B", (value & 0xff00) >> 8);
         setRegister("C", value & 0x00ff);
     }
 
+    /**
+     * Setter for 16 bit word with the DE format (D register followed by E register)
+     *
+     * @param value to assign the 16bit word
+     */
     public void setDE(int value) {
         setRegister("D", (value & 0xff00) >> 8);
         setRegister("E", value & 0x00ff);
     }
 
+    /**
+     * Setter for 16 bit word with the HL format (H register followed by L register)
+     *
+     * @param value to assign the 16bit word
+     */
     public void setHL(int value) {
         setRegister("H", (value & 0xff00) >> 8);
         setRegister("L", value & 0x00ff);
@@ -196,5 +227,35 @@ public class CPURegisters {
         setBC(0x0013);
         setDE(0x00D8);
         setHL(0x014D);
+    }
+
+    /**
+     * Builds the content of all CPU register in the following manner
+     * RegisterName: RegisterValue ... Ending with the next instructions
+     * (in OPCode) to execute
+     *
+     * @return String with all CPU registers values
+     */
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for(String register : registerNames)
+            stringBuilder.append(register).append(": ")
+                    .append(String.format("%02X", registers.get(register).getValue()))
+                    .append(" ");
+
+        stringBuilder.append("SP: ").
+                append(String.format("%04X", (int) stackPointer)).append(" ");
+        stringBuilder.append("PC: 00:").
+                append(String.format("%04X", (int) programCounter)).append(" ");
+
+        stringBuilder.append("(").append(String.format("%02X", bus.getValue(programCounter)));
+        stringBuilder.append(" ").append(String.format("%02X", bus.getValue(programCounter + 1)));
+        stringBuilder.append(" ").append(String.format("%02X", bus.getValue(programCounter + 2)));
+        stringBuilder.append(" ").append(String.format("%02X", bus.getValue(programCounter + 3)));
+        stringBuilder.append(")");
+
+        return stringBuilder.toString();
     }
 }

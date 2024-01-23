@@ -1,5 +1,6 @@
 package io.github.cpu;
 
+import io.github.memory.Bus;
 import io.github.memory.Word;
 
 /**
@@ -15,12 +16,26 @@ import io.github.memory.Word;
  * @author rodrigotimoteo
  */
 
-public class CPUFlags {
+public class Flags {
+
+    /**
+     * Stores a reference to the bus used to communicate with other components
+     */
+    private final Bus bus;
 
     /**
      * Stores the internal value of the Flags register
      */
     private final Word word = new Word();
+
+    /**
+     * Creates a new CPU Flag manager object
+     *
+     * @param bus reference to this instances bus
+     */
+    public Flags(Bus bus) {
+        this.bus = bus;
+    }
 
     /**
      * Flag register getter

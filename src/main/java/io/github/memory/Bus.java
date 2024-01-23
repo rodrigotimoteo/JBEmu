@@ -74,6 +74,8 @@ public class Bus {
         return cgb;
     }
 
+    //Memory Interaction Methods
+
     /**
      * Changes value of specific word based on its address
      *
@@ -104,6 +106,21 @@ public class Bus {
         return memory.getWord(address);
     }
 
+    //CPU Interaction Methods
+
+    public void tickCpuTimers() {
+        cpu.tickTimers();
+    }
+
+    /**
+     * Gets the register from cpu, retrieving the memory object
+     *
+     * @param register which register to retrieve
+     * @return Word containing the asked register
+     */
+    public Word getRegister(String register) {
+        return cpu.getRegister(register);
+    }
 }
 
 

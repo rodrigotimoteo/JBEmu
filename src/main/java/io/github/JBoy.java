@@ -33,6 +33,10 @@ public class JBoy extends Thread {
         RomReader romReader = new RomReader();
 
         File rom = new File("/Users/rodrigotimoteo/Projects/JBoyEmu/testRoms/01-special.gb");
+
+        if (!rom.exists())
+            throw new IllegalArgumentException("Invalid Path");
+
         romReader.loadRom(rom);
 
         cgb = romReader.isCGB();
