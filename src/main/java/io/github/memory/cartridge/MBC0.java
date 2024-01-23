@@ -4,7 +4,8 @@ import io.github.memory.MemoryModule;
 
 /**
  * Represents the MBC0 (Memory Bank Controller) one of many types of controller
- * used in the Game Boy
+ * used in the Game Boy this controller makes use of a normally a single 32KiB
+ * rom and if ram exists it will have a 8KiB module
  *
  * @author rodrigotimoteo
  */

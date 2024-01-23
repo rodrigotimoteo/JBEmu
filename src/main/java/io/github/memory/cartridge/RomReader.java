@@ -20,7 +20,7 @@ public class RomReader {
     /**
      * Number of ROM Banks, for a given input ROM size
      */
-    public final HashMap<Integer,Integer> romBanksMap = new HashMap<>();
+    private final HashMap<Integer,Integer> romBanksMap = new HashMap<>();
     {
         romBanksMap.put(0, 2);
         romBanksMap.put(1, 4);
@@ -36,15 +36,7 @@ public class RomReader {
     /**
      * Number of RAM Banks, for a given input RAM size
      */
-    public final HashMap<Integer,Integer> ramBanksMap = new HashMap<>();
-    {
-        ramBanksMap.put(0, 0);
-        ramBanksMap.put(1, 1);
-        ramBanksMap.put(2, 1);
-        ramBanksMap.put(3, 4);
-        ramBanksMap.put(4, 16);
-        ramBanksMap.put(5, 8);
-    }
+
 
     /**
      * Stores the entirety of the ROM's content
