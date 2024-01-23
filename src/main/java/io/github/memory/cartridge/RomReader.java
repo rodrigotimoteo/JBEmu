@@ -34,9 +34,18 @@ public class RomReader {
     }
 
     /**
-     * Number of RAM Banks, for a given input RAM size
+     * Stores a direct translation between the bit representing the ram in cartridge
+     * and the number of ram banks that should be created
      */
-
+    private final HashMap<Integer,Integer> ramBanksMap = new HashMap<>();
+    {
+        ramBanksMap.put(0, 0);
+        ramBanksMap.put(1, 1);
+        ramBanksMap.put(2, 1);
+        ramBanksMap.put(3, 4);
+        ramBanksMap.put(4, 16);
+        ramBanksMap.put(5, 8);
+    }
 
     /**
      * Stores the entirety of the ROM's content
@@ -95,28 +104,46 @@ public class RomReader {
 
         switch (cartridgeType) {
             case 0x00, 0x08, 0x09 -> {
-                return new MBC0(getRomSize(), romContent);
+                return new MBC0(getRomSize(), getRamSize(), romContent);
             }
             case 0x01, 0x02, 0x03 -> { //MBC1
-
+                return new MBC1(getRomSize(), getRamSize(), romContent);
             }
             case 0x05, 0x06 -> { //MBC2
-
+                return new MBC2(getRomSize(), getRamSize(), romContent);
             }
             case 0x0F, 0x10, 0x11, 0x12, 0x13 -> { //MBC3
-
+                return new MBC3(getRomSize(), getRamSize(), romContent);
             }
             case 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E -> { //MBC5
-
+                return new MBC5(getRomSize(), getRamSize(), romContent);
             }
         };
 
         return null;
     }
 
+    /**
+     * Responsible for translating the hashmap into the number of rom banks the
+     * rom needs
+     *
+     * @return number of ram banks
+     */
     public int getRomSize() {
         int romSize = romContent[ReservedAddresses.ROM_SIZE.getAddress()];
 
         return romBanksMap.get(romSize);
+    }
+
+    /**
+     * Responsible for translating the hashmap into the number of ram banks the
+     * rom needs
+     *
+     * @return number of ram banks
+     */
+    protected int getRamSize() {
+        int ramSize = romContent[ReservedAddresses.RAM_SIZE.getAddress()];
+
+        return ramBanksMap.get(ramSize);
     }
 }

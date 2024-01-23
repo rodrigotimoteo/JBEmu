@@ -11,10 +11,21 @@ import io.github.memory.Bus;
 
 public class CPU {
 
+    /**
+     * Stores a reference to the bus used to communicate with other components
+     */
     private final Bus bus;
 
+    /**
+     * Indicates whether it's intended to run on Color Game Boy mode or not
+     */
     private final boolean cgb;
 
+    /**
+     * Initializes a new CPU object with a reference to the bus
+     *
+     * @param bus reference to this instances bus
+     */
     public CPU(Bus bus) {
         this.bus = bus;
 

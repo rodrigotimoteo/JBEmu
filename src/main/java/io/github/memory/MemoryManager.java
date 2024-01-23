@@ -1,5 +1,7 @@
 package io.github.memory;
 
+import io.github.memory.cartridge.RomModule;
+
 import java.util.HashMap;
 
 /**
@@ -23,20 +25,6 @@ import java.util.HashMap;
  */
 
 public class MemoryManager implements MemoryManipulation {
-
-    /**
-     * Stores a direct translation between the bit representing the ram in cartridge
-     * and the number of ram banks that should be created
-     */
-    private final HashMap<Integer,Integer> ramBanksMap = new HashMap<>();
-    {
-        ramBanksMap.put(0, 0);
-        ramBanksMap.put(1, 1);
-        ramBanksMap.put(2, 1);
-        ramBanksMap.put(3, 4);
-        ramBanksMap.put(4, 16);
-        ramBanksMap.put(5, 8);
-    }
 
     /**
      * Reference to instances bus
@@ -79,9 +67,9 @@ public class MemoryManager implements MemoryManipulation {
      */
     private final boolean cgb;
 
-    /** Constructor Method
-     *
-     * <p></p>
+    /**
+     * Creates a new Memory Manager to facilitate memory assignments based on
+     * hardware requirements as well as handling special writes and reads
      *
      * @param bus reference to the bus in order to interact with other components
      *            as needed
@@ -99,7 +87,7 @@ public class MemoryManager implements MemoryManipulation {
         else
             vram = new MemoryModule(0x2000, 0x8000);
 
-        int numberOfRamBanks = getRamSize();
+        int numberOfRamBanks = ((RomModule) rom).getRamBanks();
         if(numberOfRamBanks == 0)
             eram = null;
         else
@@ -149,7 +137,7 @@ public class MemoryManager implements MemoryManipulation {
      * @param value to assign to the word
      */
     private void handleBottomRegisters(int address, int value) {
-
+        bottomRegisters.setValue(address, value);
     }
 
     /**
@@ -164,8 +152,7 @@ public class MemoryManager implements MemoryManipulation {
         else if (address < ReservedAddresses.VRAM_END.getAddress())
             return vram.getValue(address);
         else if (address < ReservedAddresses.ERAM_END.getAddress() && eram != null)
-            //MISSING RAM IMPLEMENTATION
-            if(true)
+            if(((RomModule) rom).getRamStatus())
                 return eram.getValue(address);
             else
                 return 0x00;
@@ -212,6 +199,10 @@ public class MemoryManager implements MemoryManipulation {
             return bottomRegisters.getWord(address);
     }
 
+    protected void changeRamBank(int bank) {
+        eram.changeActiveBank(bank);
+    }
+
     /**
      * Responsible for initializing the memory with the default values assigned
      * in the boot rom
@@ -240,18 +231,6 @@ public class MemoryManager implements MemoryManipulation {
 
         //Debug Purposes LY
         //getByte(ReservedAddresses.LY.getAddress()).setValue(0x90);
-    }
-
-    /**
-     * Responsible for translating the hashmap into the number of ram banks the
-     * rom needs
-     *
-     * @return number of ram banks
-     */
-    private int getRamSize() {
-        int ramSize = rom.getValue(ReservedAddresses.ROM_SIZE.getAddress());
-
-        return ramBanksMap.get(ramSize);
     }
 
     /**

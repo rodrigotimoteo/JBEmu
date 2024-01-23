@@ -33,10 +33,9 @@ public class Bus {
      */
     private final boolean cgb;
 
-    /** Constructor Method
-     *
-     * <p>Responsible for initializing the Bus creating the Memory Space in this
-     * instance</p>
+    /**
+     * Responsible for initializing the Bus creating the Memory Space in this
+     * instance
      *
      * @param cgb whether to use CGB mode (true if yes false otherwise)
      * @param rom memory module corresponding for specific Memory Bank Controller
@@ -104,12 +103,6 @@ public class Bus {
     public Word getWord(int address) {
         return memory.getWord(address);
     }
-
-
-
-
-
-
 
 }
 

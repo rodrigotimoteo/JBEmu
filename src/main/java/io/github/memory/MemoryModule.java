@@ -232,6 +232,16 @@ public class MemoryModule implements MemoryManipulation {
     }
 
     /**
+     * Method used for getting the number of rom banks used to store the totality
+     * of the rom used
+     *
+     * @return number of banks used
+     */
+    public int getRomBanks() {
+        return numberOfBanks;
+    }
+
+    /**
      *
      * @return
      */
