@@ -4,6 +4,13 @@ import io.github.cpu.Flags;
 import io.github.memory.Bus;
 import io.github.memory.Word;
 
+/**
+ * Class responsible for handling all things that deal with single bit operations
+ * as CPU instructions
+ *
+ * @author rodrigotimoteo
+ */
+
 public class SingleBit {
 
     /**
@@ -20,110 +27,111 @@ public class SingleBit {
         this.bus = bus;
     }
 
-    /** bit method
-     * <p>
+    /**
+     * Test given bit of a specific register given
      *
-     * </p>
-     *
-     * @param bit
-     * @param register
+     * @param bit to test
+     * @param register to test
      */
-    public void bit(int bit, String register) {
+    protected void bit(int bit, String register) {
+        Word cpuRegister = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{register});
 
+        boolean testResult = cpuRegister.testBit(bit);
 
-        boolean test = cpuRegisters.getRegister(register).testBit(bit);
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if(!test)
-            cpuRegisters.getInternalFlags().setZeroFlag();
+        if(testResult)
+            flags.setFlags(0, 0, 1, 2);
         else
-            cpuRegisters.getInternalFlags().resetZeroFlag();
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
-        cpuRegisters.getInternalFlags().setHalfCarryFlag();
+            flags.setFlags(1, 0, 1, 2);
 
-        cpuRegisters.incrementProgramCounter(1);
+        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     /**
      * Test given bit of a specific memory address contained in (HL)
      *
-     * @param bit
-     * @param address
+     * @param bit to test
+     * @param address retrieve memory to test bit
      */
-    public void bitHL(int bit, int address) {
-        bus.tickCpuTimers();
+    protected void bitHL(int bit, int address) {
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
         boolean testResult = bus.getWord(address).testBit(bit);
 
-        Flags flags = bus.getRegister("F")
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if(!test)
-            cpuRegisters.getInternalFlags().setZeroFlag();
+        if(testResult)
+            flags.setFlags(0, 0, 1, 2);
         else
-            cpuRegisters.getInternalFlags().resetZeroFlag();
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
-        cpuRegisters.getInternalFlags().setHalfCarryFlag();
+            flags.setFlags(1, 0, 1, 2);
 
-        cpuRegisters.incrementProgramCounter(1);
+        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     /**
-     * Sets the given register, the given bit
+     * Sets a bit on the given cpu register
      *
      * @param bit to set
      * @param register to change the given bit
      */
-    public void set(int bit, String register) {
-        Word cpuRegister = bus.getRegister(register);
+    protected void set(int bit, String register) {
+        Word cpuRegister = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{register});
 
         cpuRegister.setBit(bit);
 
-        cpuRegisters.incrementProgramCounter(1);
+        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
-    /** setHL method
-     * <p>
+    /**
+     * Executes the operation that sets a specific bit from a Word retrieved
+     * from the main memory
      *
-     * </p>
-     *
-     * @param bit
-     * @param address
+     * @param bit to set
+     * @param address to retrieve word from
      */
-    public void setHL(int bit, int address) {
-        cpuTimers.handle();
-        memoryManager.getByte(address).setBit(bit);
-        cpuTimers.handle();
+    protected void setHL(int bit, int address) {
+        Word word = bus.getWord(address);
 
-        cpuRegisters.incrementProgramCounter(1);
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
+        word.setBit(bit);
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
+
+        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
-    /** res method
-     * <p>
+    /**
+     * Resets a bit on the given cpu register
      *
-     * </p>
-     *
-     * @param bit
-     * @param register
+     * @param bit to reset
+     * @param register to change the given bit
      */
-    public void res(int bit, String register) {
-        cpuRegisters.getRegister(register).resetBit(bit);
+    protected void res(int bit, String register) {
+        Word cpuRegister = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{register});
 
-        cpuRegisters.incrementProgramCounter(1);
+        cpuRegister.resetBit(bit);
+
+        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
-    /** resHL method
-     * <p>
+    /**
+     * Executes the operation that resets a specific bit from a Word retrieved
+     * from the main memory
      *
-     * </p>
-     *
-     * @param bit
-     * @param address
+     * @param bit to reset
+     * @param address to retrieve word from
      */
-    public void resHL(int bit, int address) {
-        cpuTimers.handle();
-        memoryManager.getByte(address).resetBit(bit);
-        cpuTimers.handle();
+    protected void resHL(int bit, int address) {
+        Word word = bus.getWord(address);
 
-        cpuRegisters.incrementProgramCounter(1);
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
+        word.resetBit(bit);
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
+
+        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
 }

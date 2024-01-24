@@ -5,7 +5,7 @@ import io.github.memory.Bus;
 /**
  * This class is responsible for the translation between opcode values and the
  * instructions they represent, for each specific type of instructions there are
- * sub classes to make implementation easier
+ * subclasses to make implementation easier
  *
  * @author rodrigotimoteo
  */
@@ -83,7 +83,14 @@ public class Decoder {
      * @param operationCode to be executed
      */
     public void decode(int operationCode) {
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
+        if(!CB)
+            handleRegularOPs(operationCode);
+        else {
+            handleCBOps(operationCode);
+            CB = false;
+        }
     }
 
     /**
@@ -199,9 +206,9 @@ public class Decoder {
             case 0x33 -> //INC SP
                     alu.incSP();
             case 0x34 -> //INC (HL)
-                    alu.incSpecial(cpuRegisters.getHL());
+                    alu.incSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x35 -> //INC (HL)
-                    alu.decSpecial(cpuRegisters.getHL());
+                    alu.decSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x36 -> //LD (HL), n
                     load8Bit.ldNHL();
             case 0x37 -> //SCF
@@ -363,7 +370,7 @@ public class Decoder {
             case 0x85 -> //ADD A,L
                     alu.add("L");
             case 0x86 -> //ADD A,(HL)
-                    alu.addSpecial(cpuRegisters.getHL(), true);
+                    alu.addSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0x87 -> //ADD A,A
                     alu.add("A");
             case 0x88 -> //ADC A,B
@@ -379,7 +386,7 @@ public class Decoder {
             case 0x8D -> //ADC A,L
                     alu.adc("L");
             case 0x8E -> //ADC A,(HL)
-                    alu.adcSpecial(cpuRegisters.getHL(), true);
+                    alu.adcSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0x8F -> //ADC A,A
                     alu.adc("A");
             case 0x90 -> //SUB A,B
@@ -395,7 +402,7 @@ public class Decoder {
             case 0x95 -> //SUB A,L
                     alu.sub("L");
             case 0x96 -> //SUB A, (HL)
-                    alu.subSpecial(cpuRegisters.getHL(), true);
+                    alu.subSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0x97 -> //SUB A,A
                     alu.sub("A");
             case 0x98 -> //SBC A,B
@@ -411,7 +418,7 @@ public class Decoder {
             case 0x9D -> //SBC A,L
                     alu.sbc("L");
             case 0x9E -> //SBC A, (HL)
-                    alu.sbcSpecial(cpuRegisters.getHL(), true);
+                    alu.sbcSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0x9F -> //SBC A,A
                     alu.sbc("A");
             case 0xA0 -> //AND A,B
@@ -427,7 +434,7 @@ public class Decoder {
             case 0xA5 -> //AND A,L
                     alu.and("L");
             case 0xA6 -> //AND A,(HL)
-                    alu.andSpecial(cpuRegisters.getHL(), true);
+                    alu.andSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0xA7 -> //AND A,A
                     alu.and("A");
             case 0xA8 -> //XOR A,B
@@ -443,7 +450,7 @@ public class Decoder {
             case 0xAD -> //XOR A,L
                     alu.xor("L");
             case 0xAE -> //XOR A,(HL)
-                    alu.xorSpecial(cpuRegisters.getHL(), true);
+                    alu.xorSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0xAF -> //XOR A,A
                     alu.xor("A");
             case 0xB0 -> //OR A,B
@@ -459,7 +466,7 @@ public class Decoder {
             case 0xB5 -> //OR A,L
                     alu.or("L");
             case 0xB6 -> //OR A,(HL)
-                    alu.orSpecial(cpuRegisters.getHL(), true);
+                    alu.orSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0xB7 -> //OR A,A
                     alu.or("A");
             case 0xB8 -> //CP A,B
@@ -475,7 +482,7 @@ public class Decoder {
             case 0xBD -> //CP A,L
                     alu.cp("L");
             case 0xBE -> //CP A,(HL)
-                    alu.cpSpecial(cpuRegisters.getHL(), true);
+                    alu.cpSpecial((Integer) bus.getFromCPU(Bus.GET_HL, null), true);
             case 0xBF -> //CP A,A
                     alu.cp("A");
             case 0xC0 -> //RET NZ
@@ -491,7 +498,7 @@ public class Decoder {
             case 0xC5 -> //PUSH BC
                     load16Bit.push(1);
             case 0xC6 -> //ADD A,#
-                    alu.addSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.addSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xC7 -> //RST 00H
                     jump.rst(0);
             case 0xC8 -> //RET Z
@@ -502,15 +509,15 @@ public class Decoder {
                     jump.jpCond("Z");
             case 0xCB -> {
                 CB = true;
-                cpuRegisters.incrementProgramCounter(1);
-                handle(memoryManager.getValue(cpuRegisters.getProgramCounter()));
+                bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
+                decode(bus.getValue((Integer) bus.getFromCPU(Bus.GET_PC, null)));
             }
             case 0xCC -> //CALL Z,nn
                     jump.callCond("Z");
             case 0xCD -> //CALL u16
                     jump.call();
             case 0xCE -> //ADC A,#
-                    alu.adcSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.adcSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xCF -> //RST 08H
                     jump.rst(1);
             case 0xD0 -> //RET NC
@@ -524,7 +531,7 @@ public class Decoder {
             case 0xD5 -> //PUSH DE
                     load16Bit.push(2);
             case 0xD6 -> //SUB A, #
-                    alu.subSpecial(cpuRegisters.getProgramCounter() + 1,false);
+                    alu.subSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1,false);
             case 0xD7 -> //RST 10H
                     jump.rst(2);
             case 0xD8 -> //RET C
@@ -536,7 +543,7 @@ public class Decoder {
             case 0xDC -> //CALL C,nn
                     jump.callCond("C");
             case 0xDE -> //SBC A,#
-                    alu.sbcSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.sbcSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xDF -> //RST 18H
                     jump.rst(3);
             case 0xE0 -> //LD (FF00+u8),A
@@ -548,17 +555,17 @@ public class Decoder {
             case 0xE5 -> //PUSH HL
                     load16Bit.push(3);
             case 0xE6 -> //AND #
-                    alu.andSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.andSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xE7 -> //RST 20H
                     jump.rst(4);
             case 0xE8 -> //ADD SP,n
-                    alu.addSP(cpuRegisters.getProgramCounter() + 1);
+                    alu.addSP((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1);
             case 0xE9 -> //JP (HL)
                     jump.jpHL();
             case 0xEA -> //LD (nn),A
                     load8Bit.ldNN();
             case 0xEE -> //XOR #
-                    alu.xorSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.xorSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xEF -> //RST 28H
                     jump.rst(5);
             case 0xF0 -> //LD A,(FF00+u8)
@@ -572,7 +579,7 @@ public class Decoder {
             case 0xF5 -> //PUSH AF
                     load16Bit.push(0);
             case 0xF6 -> //OR #
-                    alu.orSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.orSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xF7 -> //RST 30H
                     jump.rst(6);
             case 0xF8 -> //LDHL SP,n
@@ -584,7 +591,7 @@ public class Decoder {
             case 0xFB -> //EI
                     control.ei();
             case 0xFE -> //CP A,u8
-                    alu.cpSpecial(cpuRegisters.getProgramCounter() + 1, false);
+                    alu.cpSpecial((Integer) bus.getFromCPU(Bus.GET_PC, null) + 1, false);
             case 0xFF -> //RST 38H
                     jump.rst(7);
             default -> {
@@ -608,7 +615,7 @@ public class Decoder {
             case 0x05 -> //RLC L
                     rotateShift.rlc("L");
             case 0x06 -> //RLC HL
-                    rotateShift.rlcHL(cpuRegisters.getHL());
+                    rotateShift.rlcHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x07 -> //RLC A
                     rotateShift.rlc("A");
             case 0x08 -> //RRC B
@@ -624,7 +631,7 @@ public class Decoder {
             case 0x0D -> //RRC L
                     rotateShift.rrc("L");
             case 0x0E -> //RRC (HL)
-                    rotateShift.rrcHL(cpuRegisters.getHL());
+                    rotateShift.rrcHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x0F -> //RRC A
                     rotateShift.rrc("A");
             case 0x10 -> //RL B
@@ -640,7 +647,7 @@ public class Decoder {
             case 0x15 -> //RL L
                     rotateShift.rl("L");
             case 0x16 -> //RL (HL)
-                    rotateShift.rlHL(cpuRegisters.getHL());
+                    rotateShift.rlHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x17 -> //RL A
                     rotateShift.rl("A");
             case 0x18 -> //RR B
@@ -656,7 +663,7 @@ public class Decoder {
             case 0x1D -> //RR L
                     rotateShift.rr("L");
             case 0x1E -> //RR (HL)
-                    rotateShift.rrHL(cpuRegisters.getHL());
+                    rotateShift.rrHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x1F -> //RR A
                     rotateShift.rr("A");
             case 0x20 -> //SLA B
@@ -672,7 +679,7 @@ public class Decoder {
             case 0x25 -> //SLA L
                     rotateShift.sla("L");
             case 0x26 -> //SLA (HL)
-                    rotateShift.slaHL(cpuRegisters.getHL());
+                    rotateShift.slaHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x27 -> //SLA A
                     rotateShift.sla("A");
             case 0x28 -> //SRA B
@@ -688,7 +695,7 @@ public class Decoder {
             case 0x2D -> //SRA L
                     rotateShift.sra("L");
             case 0x2E -> //SRA (HL)
-                    rotateShift.sraHL(cpuRegisters.getHL());
+                    rotateShift.sraHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x2F -> //SRA A
                     rotateShift.sra("A");
             case 0x30 -> //SWAP B
@@ -704,7 +711,7 @@ public class Decoder {
             case 0x35 -> //SWAP L
                     rotateShift.swap("L");
             case 0x36 -> //SWAP (HL)
-                    rotateShift.swapHL(cpuRegisters.getHL());
+                    rotateShift.swapHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x37 -> //SWAP A
                     rotateShift.swap("A");
             case 0x38 -> //SRL B
@@ -720,7 +727,7 @@ public class Decoder {
             case 0x3D -> //SRL L
                     rotateShift.srl("L");
             case 0x3E -> //SRL (HL)
-                    rotateShift.srlHL(cpuRegisters.getHL());
+                    rotateShift.srlHL((Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x3F -> //SRL A
                     rotateShift.srl("A");
             case 0x40 -> //BIT 0,B
@@ -736,7 +743,7 @@ public class Decoder {
             case 0x45 -> //BIT 0,L
                     singleBit.bit(0, "L");
             case 0x46 -> //BIT 0,(HL)
-                    singleBit.bitHL(0, cpuRegisters.getHL());
+                    singleBit.bitHL(0, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x47 -> //BIT 0,A
                     singleBit.bit(0, "A");
             case 0x48 -> //BIT 1,B
@@ -752,7 +759,7 @@ public class Decoder {
             case 0x4D -> //BIT 1,L
                     singleBit.bit(1, "L");
             case 0x4E -> //BIT 1,(HL)
-                    singleBit.bitHL(1, cpuRegisters.getHL());
+                    singleBit.bitHL(1, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x4F -> //BIT 1,A
                     singleBit.bit(1, "A");
             case 0x50 -> //BIT 2,B
@@ -768,7 +775,7 @@ public class Decoder {
             case 0x55 -> //BIT 2,L
                     singleBit.bit(2, "L");
             case 0x56 -> //BIT 2,(HL)
-                    singleBit.bitHL(2, cpuRegisters.getHL());
+                    singleBit.bitHL(2, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x57 -> //BIT 2,A
                     singleBit.bit(2, "A");
             case 0x58 -> //BIT 3,B
@@ -784,7 +791,7 @@ public class Decoder {
             case 0x5D -> //BIT 3,L
                     singleBit.bit(3, "L");
             case 0x5E -> //BIT 3,(HL)
-                    singleBit.bitHL(3, cpuRegisters.getHL());
+                    singleBit.bitHL(3, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x5F -> //BIT 3,A
                     singleBit.bit(3, "A");
             case 0x60 -> //BIT 4,B
@@ -800,7 +807,7 @@ public class Decoder {
             case 0x65 -> //BIT 4,L
                     singleBit.bit(4, "L");
             case 0x66 -> //BIT 4,(HL)
-                    singleBit.bitHL(4, cpuRegisters.getHL());
+                    singleBit.bitHL(4, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x67 -> //BIT 4,A
                     singleBit.bit(4, "A");
             case 0x68 -> //BIT 5,B
@@ -816,7 +823,7 @@ public class Decoder {
             case 0x6D -> //BIT 5,L
                     singleBit.bit(5, "L");
             case 0x6E -> //BIT 5,(HL)
-                    singleBit.bitHL(5, cpuRegisters.getHL());
+                    singleBit.bitHL(5, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x6F -> //BIT 5,A
                     singleBit.bit(5, "A");
             case 0x70 -> //BIT 6,B
@@ -832,7 +839,7 @@ public class Decoder {
             case 0x75 -> //BIT 6,L
                     singleBit.bit(6, "L");
             case 0x76 -> //BIT 6,(HL)
-                    singleBit.bitHL(6, cpuRegisters.getHL());
+                    singleBit.bitHL(6, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x77 -> //BIT 6,A
                     singleBit.bit(6, "A");
             case 0x78 -> //BIT 7,B
@@ -848,7 +855,7 @@ public class Decoder {
             case 0x7D -> //BIT 7,L
                     singleBit.bit(7, "L");
             case 0x7E -> //BIT 7, (HL)
-                    singleBit.bitHL(7, cpuRegisters.getHL());
+                    singleBit.bitHL(7, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x7F -> //BIT 7,A
                     singleBit.bit(7, "A");
             case 0x80 -> //RES 0,B
@@ -864,7 +871,7 @@ public class Decoder {
             case 0x85 -> //RES 0,L
                     singleBit.res(0, "L");
             case 0x86 -> //RES 0,(HL)
-                    singleBit.resHL(0, cpuRegisters.getHL());
+                    singleBit.resHL(0, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x87 -> //RES 0,A
                     singleBit.res(0, "A");
             case 0x88 -> //RES 1,B
@@ -880,7 +887,7 @@ public class Decoder {
             case 0x8D -> //RES 1,L
                     singleBit.res(1, "L");
             case 0x8E -> //RES 1,(HL)
-                    singleBit.resHL(1, cpuRegisters.getHL());
+                    singleBit.resHL(1, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x8F -> //RES 1,A
                     singleBit.res(1, "A");
             case 0x90 -> //RES 2,B
@@ -896,7 +903,7 @@ public class Decoder {
             case 0x95 -> //RES 2,L
                     singleBit.res(2, "L");
             case 0x96 -> //RES 2,(HL)
-                    singleBit.resHL(2, cpuRegisters.getHL());
+                    singleBit.resHL(2, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x97 -> //RES 2,A
                     singleBit.res(2, "A");
             case 0x98 -> //RES 3,B
@@ -912,7 +919,7 @@ public class Decoder {
             case 0x9D -> //RES 3,L
                     singleBit.res(3, "L");
             case 0x9E -> //RES 3,(HL)
-                    singleBit.resHL(3, cpuRegisters.getHL());
+                    singleBit.resHL(3, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0x9F -> //RES 3,A
                     singleBit.res(3, "A");
             case 0xA0 -> //RES 4,B
@@ -928,7 +935,7 @@ public class Decoder {
             case 0xA5 -> //RES 4,L
                     singleBit.res(4, "L");
             case 0xA6 -> //RES 4,(HL)
-                    singleBit.resHL(4, cpuRegisters.getHL());
+                    singleBit.resHL(4, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xA7 -> //RES 4,A
                     singleBit.res(4, "A");
             case 0xA8 -> //RES 5,B
@@ -944,7 +951,7 @@ public class Decoder {
             case 0xAD -> //RES 5,L
                     singleBit.res(5, "L");
             case 0xAE -> //RES 5,(HL)
-                    singleBit.resHL(5, cpuRegisters.getHL());
+                    singleBit.resHL(5, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xAF -> //RES 5,A
                     singleBit.res(5, "A");
             case 0xB0 -> //RES 6,B
@@ -960,7 +967,7 @@ public class Decoder {
             case 0xB5 -> //RES 6,L
                     singleBit.res(6, "L");
             case 0xB6 -> //RES 6,(HL)
-                    singleBit.resHL(6, cpuRegisters.getHL());
+                    singleBit.resHL(6, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xB7 -> //RES 6,A
                     singleBit.res(6, "A");
             case 0xB8 -> //RES 7,B
@@ -976,7 +983,7 @@ public class Decoder {
             case 0xBD -> //RES 7,L
                     singleBit.res(7, "L");
             case 0xBE -> //RES 7,(HL)
-                    singleBit.resHL(7, cpuRegisters.getHL());
+                    singleBit.resHL(7, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xBF -> //RES 7,A
                     singleBit.res(7, "A");
             case 0xC0 -> //SET 0,B
@@ -992,7 +999,7 @@ public class Decoder {
             case 0xC5 -> //SET 0,L
                     singleBit.set(0, "L");
             case 0xC6 -> //SET 0,(HL)
-                    singleBit.setHL(0, cpuRegisters.getHL());
+                    singleBit.setHL(0, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xC7 -> //SET 0,A
                     singleBit.set(0, "A");
             case 0xC8 -> //SET 1,B
@@ -1008,7 +1015,7 @@ public class Decoder {
             case 0xCD -> //SET 1,L
                     singleBit.set(1, "L");
             case 0xCE -> //SET 1,(HL)
-                    singleBit.setHL(1, cpuRegisters.getHL());
+                    singleBit.setHL(1, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xCF -> //SET 1,A
                     singleBit.set(1, "A");
             case 0xD0 -> //SET 2,B
@@ -1024,7 +1031,7 @@ public class Decoder {
             case 0xD5 -> //SET 2,L
                     singleBit.set(2, "L");
             case 0xD6 -> //SET 2,(HL)
-                    singleBit.setHL(2, cpuRegisters.getHL());
+                    singleBit.setHL(2, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xD7 -> //SET 2,A
                     singleBit.set(2, "A");
             case 0xD8 -> //SET 3,B
@@ -1040,7 +1047,7 @@ public class Decoder {
             case 0xDD -> //SET 3,L
                     singleBit.set(3, "L");
             case 0xDE -> //SET 3,(HL)
-                    singleBit.setHL(3, cpuRegisters.getHL());
+                    singleBit.setHL(3, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xDF -> //SET 3,A
                     singleBit.set(3, "A");
             case 0xE0 -> //SET 4,B
@@ -1056,7 +1063,7 @@ public class Decoder {
             case 0xE5 -> //SET 4,L
                     singleBit.set(4, "L");
             case 0xE6 -> //SET 4,(HL)
-                    singleBit.setHL(4, cpuRegisters.getHL());
+                    singleBit.setHL(4, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xE7 -> //SET 4,A
                     singleBit.set(4, "A");
             case 0xE8 -> //SET 5,B
@@ -1072,7 +1079,7 @@ public class Decoder {
             case 0xED -> //SET 5,L
                     singleBit.set(5, "L");
             case 0xEE -> //SET 5,(HL)
-                    singleBit.setHL(5, cpuRegisters.getHL());
+                    singleBit.setHL(5, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xEF -> //SET 5,A
                     singleBit.set(5, "A");
             case 0xF0 -> //SET 6,B
@@ -1088,7 +1095,7 @@ public class Decoder {
             case 0xF5 -> //SET 6,L
                     singleBit.set(6, "L");
             case 0xF6 -> //SET 6,(HL)
-                    singleBit.setHL(6, cpuRegisters.getHL());
+                    singleBit.setHL(6, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xF7 -> //SET 6,A
                     singleBit.set(6, "A");
             case 0xF8 -> //SET 7,B
@@ -1104,7 +1111,7 @@ public class Decoder {
             case 0xFD -> //SET 7,L
                     singleBit.set(7, "L");
             case 0xFE -> //SET 7,(HL)
-                    singleBit.setHL(7, cpuRegisters.getHL());
+                    singleBit.setHL(7, (Integer) bus.getFromCPU(Bus.GET_HL, null));
             case 0xFF -> //SET 7,A
                     singleBit.set(7, "A");
             default -> {

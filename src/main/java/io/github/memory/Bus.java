@@ -14,6 +14,37 @@ import io.github.ppu.PPU;
 public class Bus {
 
     /**
+     * Stores CPU Getter codes
+     */
+    public static final int GET_FLAGS       = 0;
+    public static final int GET_REGISTER    = 1;
+    public static final int GET_AF          = 2;
+    public static final int GET_BC          = 3;
+    public static final int GET_DE          = 4;
+    public static final int GET_HL          = 5;
+    public static final int GET_PC          = 6;
+    public static final int GET_SP          = 7;
+
+    /**
+     * Stores CPU Execution codes
+     */
+    public static final int TICK_TIMERS     = 0;
+    public static final int SET_REGISTER    = 1;
+    public static final int INCR_PC         = 2;
+    public static final int SET_PC          = 3;
+    public static final int INCR_SP         = 4;
+    public static final int SET_SP          = 5;
+    public static final int SET_AF          = 6;
+    public static final int SET_BC          = 7;
+    public static final int SET_DE          = 8;
+    public static final int SET_HL          = 9;
+    public static final int DISABLE_INT     = 10;
+    public static final int ENABLE_INT      = 11;
+    public static final int HALT            = 12;
+    public static final int STOP            = 13;
+
+
+    /**
      * Stores a reference to the CPU
      */
     private CPU cpu;
@@ -108,18 +139,81 @@ public class Bus {
 
     //CPU Interaction Methods
 
-    public void tickCpuTimers() {
-        cpu.tickTimers();
+    /**
+     * Follows a structured table in order to retrieve information from the cpu
+     * based on codes
+     *
+     * @param code information identifier
+     * @param parameters additional information that might be required to execute
+     *                   some methods
+     * @return asked information
+     */
+    public Object getFromCPU(int code, String[] parameters) {
+        return switch (code) {
+            case GET_FLAGS      -> cpu.getRegisters().getFlags();
+            case GET_REGISTER   -> cpu.getRegisters().getRegister(parameters[0]);
+            case GET_AF         -> cpu.getRegisters().getAF();
+            case GET_BC         -> cpu.getRegisters().getBC();
+            case GET_DE         -> cpu.getRegisters().getDE();
+            case GET_HL         -> cpu.getRegisters().getHL();
+            case GET_PC         -> cpu.getRegisters().getProgramCounter();
+            case GET_SP         -> cpu.getRegisters().getStackPointer();
+            default ->
+                    throw new IllegalStateException("Unexpected value: " + code);
+        };
     }
 
     /**
-     * Gets the register from cpu, retrieving the memory object
+     * Follows a structured table in order to execute operations inside the cpu
+     * based on codes
      *
-     * @param register which register to retrieve
-     * @return Word containing the asked register
+     * @param code information identifier
+     * @param parameters additional information that might be required to execute
+     *                   some methods
      */
-    public Word getRegister(String register) {
-        return cpu.getRegister(register);
+    public void executeFromCPU(int code, String[] parameters) {
+        switch (code) {
+            case TICK_TIMERS    -> cpu.getTimers().tick();
+            case SET_REGISTER   -> cpu.getRegisters()
+                    .setRegister(parameters[0], Integer.parseInt(parameters[1]));
+            case INCR_PC        -> cpu.getRegisters()
+                    .incrementProgramCounter(Integer.parseInt(parameters[0]));
+            case SET_PC         -> cpu.getRegisters()
+                    .setProgramCounter(Integer.parseInt(parameters[0]));
+            case INCR_SP        -> cpu.getRegisters()
+                    .incrementStackPointer(Integer.parseInt(parameters[0]));
+            case SET_SP         -> cpu.getRegisters()
+                    .setStackPointer(Integer.parseInt(parameters[0]));
+            case SET_AF         -> cpu.getRegisters()
+                    .setAF(Integer.parseInt(parameters[0]));
+            case SET_BC         -> cpu.getRegisters()
+                    .setBC(Integer.parseInt(parameters[0]));
+            case SET_DE         -> cpu.getRegisters()
+                    .setDE(Integer.parseInt(parameters[0]));
+            case SET_HL         -> cpu.getRegisters()
+                    .setHL(Integer.parseInt(parameters[0]));
+            case DISABLE_INT    -> cpu.interruptChange(false);
+            case ENABLE_INT     -> cpu.interruptChange(true);
+            case HALT           -> cpu.setHalted(true);
+            case STOP           -> cpu.setStopped(true);
+        };
+    }
+
+    /**
+     * Using the program counter uses the next two word to build a new address
+     * usually called NN
+     *
+     * @return address calculated
+     */
+    public int calculateNN() {
+        int programCounter = (Integer) getFromCPU(Bus.GET_PC, null);
+
+        executeFromCPU(Bus.TICK_TIMERS, null);
+        int lowerAddress = getValue(programCounter + 1);
+        executeFromCPU(Bus.TICK_TIMERS, null);
+        int upperAddress = getValue(programCounter + 2) << 8;
+
+        return upperAddress + lowerAddress;
     }
 }
 

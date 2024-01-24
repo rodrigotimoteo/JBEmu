@@ -109,6 +109,15 @@ public class Registers {
     }
 
     /**
+     * Increments the stack pointer by the given value
+     *
+     * @param value to increase stack pointer
+     */
+    public void incrementStackPointer(int value) {
+        stackPointer += (char) value;
+    }
+
+    /**
      * Sets the value of the stack pointer to the given one
      *
      * @param value to assign stack pointer

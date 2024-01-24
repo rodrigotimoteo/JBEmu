@@ -56,6 +56,38 @@ public class Flags {
     }
 
     /**
+     * Sets all the flags based on the given values where 0 is false (reset), 1
+     * is true (set) and other values (normally should be used 2) won't have any
+     * effect in the flag
+     *
+     * @param zero status of zero flag
+     * @param subtract status of subtract flag
+     * @param half status of half carry flag
+     * @param carry status of carry flag
+     */
+    public void setFlags(int zero, int subtract, int half, int carry) {
+        if(zero == 0)
+            resetZeroFlag();
+        else if(zero == 1)
+            setZeroFlag();
+
+        if(subtract == 0)
+            resetSubtractFlag();
+        else if(subtract == 1)
+            setSubtractFlag();
+
+        if(half == 0)
+            resetHalfCarryFlag();
+        else if(half == 1)
+            setHalfCarryFlag();
+
+        if(carry == 0)
+            resetCarryFlag();
+        else if(carry == 1)
+            setCarryFlag();
+    }
+
+    /**
      * Sets the bit correspondent to the Zero Flag
      */
     public void setZeroFlag() {
