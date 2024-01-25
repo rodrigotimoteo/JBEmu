@@ -401,7 +401,7 @@ public class Alu {
         flags.setFlags(zero, 0, 0, 0);
 
         if(HL)  bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
-        else    bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
+        else    bus.executeFromCPU(Bus.INCR_PC, new String[]{"2"});
     }
 
     public void xor(String register) {
@@ -447,216 +447,215 @@ public class Alu {
         else    bus.executeFromCPU(Bus.INCR_PC, new String[]{"2"});
     }
 
+    /**
+     * This operation compares the given register with register A's value,
+     * basically does a substitution but throws the results away
+     *
+     * @param register used to retrieve the register to compare to register A's
+     *                 value
+     */
     public void cp(String register) {
-        int value = cpuRegisters.getRegister(register).getValue();
-        int registerA = cpuRegisters.getRegister("A").getValue();
+        Word valueN = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{register});
+        Word registerA = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
 
-        if(value == registerA) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
+        int valueNValue = valueN.getValue();
+        int registerAValue = registerA.getValue();
 
-        if((value & 0xf) > (registerA & 0xf)) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if(value > registerA) cpuRegisters.getInternalFlags().setCarryFlag();
-        else cpuRegisters.getInternalFlags().resetCarryFlag();
+        int zero = checkZero(valueNValue - registerAValue);
+        int halfCarry = checkHalfCarrySub(registerAValue, valueNValue, 0);
+        int carry = checkCarrySub(registerAValue - valueNValue);
 
-        cpuRegisters.getInternalFlags().setSubtractFlag();
+        flags.setFlags(zero, 1, halfCarry, carry);
 
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void cpSpecial(int address, boolean HL) {
-        cpuTimers.handle();
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
-        int value = memoryManager.getValue(address);
-        int registerA = cpuRegisters.getRegister("A").getValue();
+        Word registerA = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
 
-        if(value == registerA) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
+        int registerAValue = registerA.getValue();
+        int valueNValue = bus.getValue(address);
 
-        if((value & 0xf) > (registerA & 0xf)) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if(value > registerA) cpuRegisters.getInternalFlags().setCarryFlag();
-        else cpuRegisters.getInternalFlags().resetCarryFlag();
+        int zero = checkZero(valueNValue - registerAValue);
+        int halfCarry = checkHalfCarrySub(registerAValue, valueNValue, 0);
+        int carry = checkCarrySub(registerAValue - valueNValue);
 
-        cpuRegisters.getInternalFlags().setSubtractFlag();
+        flags.setFlags(zero, 1, halfCarry, carry);
 
         if(HL)  bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
-        else    bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
+        else    bus.executeFromCPU(Bus.INCR_PC, new String[]{"2"});
     }
 
+    /**
+     * This operation increments the given register by one
+     *
+     * @param register used to retrieve the register to increment
+     */
     public void inc(String register) {
-        int value = cpuRegisters.getRegister(register).getValue();
+        Word valueN = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
 
-        if((value & 0xf) == 0xf) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
+        int valueNValue = valueN.getValue();
+        int halfCarry = checkHalfCarryAdd(valueNValue, 1, 0);
 
-        value = (value + 1) & 0xff;
+        valueNValue = (valueNValue + 1) & 0xFF;
 
-        cpuRegisters.setRegister(register, value);
+        int zero = checkZero(valueNValue);
+        flags.setFlags(zero, 0, halfCarry, 2);
 
-        if(value == 0) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
-
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
-
+        bus.executeFromCPU(Bus.SET_REGISTER, new String[]{register, String.valueOf(valueNValue)});
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void incSpecial(int address) {
-        cpuTimers.handle();
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
-        int value = memoryManager.getValue(address);
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
+        int valueNValue = bus.getValue(address);
 
-        if((value & 0xf) == 0xf) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        int halfCarry = checkHalfCarryAdd(valueNValue, 1,0 );
 
-        value = (value + 1) & 0xff;
+        valueNValue = (valueNValue + 1) & 0xFF;
 
-        cpuTimers.handle();
-        memoryManager.setValue(address, value);
+        int zero = checkZero(valueNValue);
+        flags.setFlags(zero, 0, halfCarry, 2);
 
-        if(value == 0) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
-
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
-
+        bus.setValue(address, valueNValue);
+        bus.executeFromCPU(Bus.TICK_TIMERS, null);
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void dec(String register) {
-        int value = cpuRegisters.getRegister(register).getValue();
+        Word valueN = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
 
-        if((value & 0xf) == 0) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
+        int valueNValue = valueN.getValue();
 
-        value -= 1;
+        int halfCarry = checkHalfCarrySub(valueNValue, 1, 0);
 
-        cpuRegisters.setRegister(register, value);
+        valueNValue--;
 
-        if(value == 0) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
+        int zero = checkZero(valueNValue);
+        flags.setFlags(zero, 1, halfCarry, 2);
 
-        cpuRegisters.getInternalFlags().setSubtractFlag();
-
+        bus.executeFromCPU(Bus.SET_REGISTER, new String[]{register, String.valueOf(valueNValue)});
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void decSpecial(int address) {
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
-        int value = bus.getValue(address);
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if((value & 0xf) == 0) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        int valueNValue = bus.getValue(address);
 
-        value -= 1;
+        int halfCarry = checkHalfCarrySub(valueNValue, 1, 0);
+        valueNValue -= 1;
 
+        int zero = checkZero(valueNValue);
+
+        flags.setFlags(zero, 1, halfCarry, 2);
+
+        bus.setValue(address, valueNValue & 0xFF);
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
-        memoryManager.setValue(address, value & 0xff);
-
-        if(value == 0) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
-
-        cpuRegisters.getInternalFlags().setSubtractFlag();
-
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void addHL(int register) {
-        int HL = cpuRegisters.getHL();
+        int HL = (Integer) bus.getFromCPU(Bus.GET_HL, null);
         int R = 0;
 
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
+
         switch(register) {
-            case 0 -> R = cpuRegisters.getBC();
-            case 1 -> R = cpuRegisters.getDE();
-            case 2 -> R = cpuRegisters.getHL();
+            case 0 -> R = (Integer) bus.getFromCPU(Bus.GET_BC, null);
+            case 1 -> R = (Integer) bus.getFromCPU(Bus.GET_DE, null);
+            case 2 -> R = (Integer) bus.getFromCPU(Bus.GET_HL, null);
         }
 
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
-        if(((HL & 0xfff) + (R & 0xfff) & 0x1000) == 0x1000) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
-
-        if((HL & 0xffff) + (R & 0xffff) > 0xffff) cpuRegisters.getInternalFlags().setCarryFlag();
-        else cpuRegisters.getInternalFlags().resetCarryFlag();
+        int halfCarry = (((HL & 0xFFF) + (R & 0xFFF) & 0x1000) == 0x1000) ? 1 : 0;
+        int carry = ((HL & 0xFFFF) + (R & 0xFFFF) > 0xFFFF) ? 1 : 0;
 
         int temp = ((HL & 0xffff) + (R & 0xffff)) & 0xffff;
 
-        cpuRegisters.setHL(temp);
 
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
+        flags.setFlags(2, 0, halfCarry, carry);
 
+        bus.executeFromCPU(Bus.SET_HL, new String[]{String.valueOf(temp)});
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void addHLSP() {
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
-        int HL = cpuRegisters.getHL();
-        int SP = cpuRegisters.getStackPointer();
+        int HL = (Integer) bus.getFromCPU(Bus.GET_HL, null);
+        int stackPointer = (Integer) bus.getFromCPU(Bus.GET_SP, null);
 
-        if(((HL & 0xfff) + (SP & 0xfff) & 0x1000) == 0x1000) cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if((HL & 0xffff) + (SP & 0xffff) > 0xffff) cpuRegisters.getInternalFlags().setCarryFlag();
-        else cpuRegisters.getInternalFlags().resetCarryFlag();
+        int halfCarry = (((HL & 0xFFF) + (stackPointer & 0xFFF) & 0x1000) == 0x1000) ? 1 : 0;
+        int carry = ((HL & 0xFFFF) + (stackPointer & 0xFFFF) > 0xFFFF) ? 1 : 0;
 
-        int temp = ((HL & 0xffff) + (SP & 0xffff)) & 0xffff;
+        int temp = ((HL & 0xFFFF) + (stackPointer & 0xFFFF)) & 0xFFFF;
 
-        cpuRegisters.setHL(temp);
+        flags.setFlags(2, 0, halfCarry, carry);
 
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
-
+        bus.executeFromCPU(Bus.SET_HL, new String[]{String.valueOf(temp)});
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     public void addSP(int address) {
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
-        int value = memoryManager.getValue(address);
-        int stackPointer = cpuRegisters.getStackPointer();
-        if(((value & 0x80) >> 7) == 1) value = (value & 0x7f) - 0x80;
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
 
-        if((((stackPointer & 0x0f) + (memoryManager.getValue(address) & 0x0f)) & 0x10) == 0x10)
-            cpuRegisters.getInternalFlags().setHalfCarryFlag();
-        else
-            cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        int value = bus.getValue(address);
+        int valueSigned = bus.getValue(address);
+        int stackPointer = (Integer) bus.getFromCPU(Bus.GET_SP, null);
+        if(((valueSigned & 0x80) >> 7) == 1) valueSigned = (valueSigned & 0x7F) - 0x80;
 
-        if((((stackPointer & 0xff) + (memoryManager.getValue(address) & 0xff)) & 0x100) == 0x100)
-            cpuRegisters.getInternalFlags().setCarryFlag();
-        else
-            cpuRegisters.getInternalFlags().resetCarryFlag();
+        int halfCarry = checkHalfCarryAdd(value, stackPointer, 0);
+        int carry = ((((stackPointer & 0xFF) + (value & 0xFF)) & 0x100) == 0x100) ? 1 : 0;
 
-        value = (cpuRegisters.getStackPointer() + value) & 0xffff;
+        valueSigned = (stackPointer + value) & 0xFFFF;
+
+        flags.setFlags(0, 0, halfCarry, carry);
 
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
-
-        cpuRegisters.setStackPointer(value);
-        cpuRegisters.getInternalFlags().resetZeroFlag();
-        cpuRegisters.getInternalFlags().resetSubtractFlag();
-
+        bus.executeFromCPU(Bus.SET_SP, new String[]{String.valueOf(valueSigned)});
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"2"});
     }
 
     public void incR(int register) {
         switch(register) {
             case 0 -> {
-                int temp = cpuRegisters.getBC();
-                temp = (temp + 1) & 0xffff;
-                cpuRegisters.setBC(temp);
+                int temp = (Integer) bus.getFromCPU(Bus.GET_BC, null);
+                temp = (temp + 1) & 0xFFFF;
+                bus.executeFromCPU(Bus.SET_BC, new String[]{String.valueOf(temp)});
             }
             case 1-> {
-                int temp = cpuRegisters.getDE();
-                temp = (temp + 1) & 0xffff;
-                cpuRegisters.setDE(temp);
+                int temp = (Integer) bus.getFromCPU(Bus.GET_DE, null);
+                temp = (temp + 1) & 0xFFFF;
+                bus.executeFromCPU(Bus.SET_DE, new String[]{String.valueOf(temp)});
             }
             case 2-> {
-                int temp = cpuRegisters.getHL();
-                temp = (temp + 1) & 0xffff;
-                cpuRegisters.setHL(temp);
+                int temp = (Integer) bus.getFromCPU(Bus.GET_HL, null);
+                temp = (temp + 1) & 0xFFFF;
+                bus.executeFromCPU(Bus.SET_HL, new String[]{String.valueOf(temp)});
             }
         }
 
@@ -680,19 +679,19 @@ public class Alu {
     public void decR(int register) {
         switch(register) {
             case 0 -> {
-                int temp = cpuRegisters.getBC();
-                temp = (temp - 1) & 0xffff;
-                cpuRegisters.setBC(temp);
+                int temp = (Integer) bus.getFromCPU(Bus.GET_BC, null);
+                temp = (temp - 1) & 0xFFFF;
+                bus.executeFromCPU(Bus.SET_BC, new String[]{String.valueOf(temp)});
             }
             case 1-> {
-                int temp = cpuRegisters.getDE();
-                temp = (temp - 1) & 0xffff;
-                cpuRegisters.setDE(temp);
+                int temp = (Integer) bus.getFromCPU(Bus.GET_DE, null);
+                temp = (temp - 1) & 0xFFFF;
+                bus.executeFromCPU(Bus.SET_DE, new String[]{String.valueOf(temp)});
             }
             case 2-> {
-                int temp = cpuRegisters.getHL();
-                temp = (temp - 1) & 0xffff;
-                cpuRegisters.setHL(temp);
+                int temp = (Integer) bus.getFromCPU(Bus.GET_HL, null);
+                temp = (temp - 1) & 0xFFFF;
+                bus.executeFromCPU(Bus.SET_HL, new String[]{String.valueOf(temp)});
             }
         }
 
@@ -713,29 +712,36 @@ public class Alu {
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
+    /**
+     * This operation performs a decimal adjustments to the value in register A,
+     * this means getting the correct Binary Coded Decimal for the value in A
+     */
     public void daa() {
-        if(cpuRegisters.getInternalFlags().getSubtractFlag()) {
-            if(cpuRegisters.getInternalFlags().getCarryFlag())
-                cpuRegisters.setRegister("A",
-                        (cpuRegisters.getRegister("A").getValue() - 0x60) & 0xff);
-            if(cpuRegisters.getInternalFlags().getHalfCarryFlag())
-                cpuRegisters.setRegister("A",
-                        (cpuRegisters.getRegister("A").getValue() - 0x06) & 0xff);
-        } else {
-            if(cpuRegisters.getInternalFlags().getCarryFlag() || cpuRegisters.getRegister("A").getValue() > 0x99) {
-                cpuRegisters.setRegister("A",
-                        (cpuRegisters.getRegister("A").getValue() + 0x60) & 0xff);
-                cpuRegisters.getInternalFlags().setCarryFlag();
-            }
-            if(cpuRegisters.getInternalFlags().getHalfCarryFlag() || (cpuRegisters.getRegister("A").getValue() & 0x0f) > 0x09)
-                cpuRegisters.setRegister("A",
-                        (cpuRegisters.getRegister("A").getValue() + 0x6) & 0xff);
+        Word valueN = (Word)
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
+        int valueNValue = valueN.getValue();
+
+        Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
+
+        int offset = 0;
+        int carry  = 0;
+
+        if((!flags.getSubtractFlag() && (valueNValue & 0x0F) > 0x09) || flags.getHalfCarryFlag())
+            offset |= 0x06;
+        if((!flags.getSubtractFlag() && valueNValue > 0x99) || flags.getCarryFlag()) {
+            offset |= 0x60;
+            carry = 1;
         }
 
-        if(cpuRegisters.getRegister("A").getValue() == 0) cpuRegisters.getInternalFlags().setZeroFlag();
-        else cpuRegisters.getInternalFlags().resetZeroFlag();
-        cpuRegisters.getInternalFlags().resetHalfCarryFlag();
+        if(flags.getSubtractFlag())
+            valueNValue -= offset;
+        else
+            valueNValue += offset;
 
+        int zero = checkZero(valueNValue & 0xFF);
+        flags.setFlags(zero, 2, 0, carry);
+
+        bus.executeFromCPU(Bus.SET_REGISTER, new String[]{"A", String.valueOf(valueNValue)});
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
