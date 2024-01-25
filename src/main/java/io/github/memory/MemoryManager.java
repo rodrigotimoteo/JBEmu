@@ -115,8 +115,10 @@ public class MemoryManager implements MemoryManipulation {
             rom.setValue(address, value);
         else if (address < ReservedAddresses.VRAM_END.getAddress())
             vram.setValue(address, value);
-        else if (address < ReservedAddresses.ERAM_END.getAddress() && eram != null)
-            eram.setValue(address, value);
+        else if (address < ReservedAddresses.ERAM_END.getAddress()) {
+            if(eram != null)
+                eram.setValue(address, value);
+        }
         else if (address < ReservedAddresses.WRAM_END.getAddress())
             wram.setValue(address, value);
         else if (address < ReservedAddresses.OAM_START.getAddress())
@@ -151,8 +153,8 @@ public class MemoryManager implements MemoryManipulation {
             return rom.getValue(address);
         else if (address < ReservedAddresses.VRAM_END.getAddress())
             return vram.getValue(address);
-        else if (address < ReservedAddresses.ERAM_END.getAddress() && eram != null)
-            if(((RomModule) rom).getRamStatus())
+        else if (address < ReservedAddresses.ERAM_END.getAddress())
+            if(eram != null && ((RomModule) rom).getRamStatus())
                 return eram.getValue(address);
             else
                 return 0x00;
@@ -225,12 +227,12 @@ public class MemoryManager implements MemoryManipulation {
         getWord(ReservedAddresses.NR52.getAddress()).setValue(0xF1);
         getWord(ReservedAddresses.LCDC.getAddress()).setValue(0x91);
         getWord(ReservedAddresses.STAT.getAddress()).setValue(0x80);
-        getWord(ReservedAddresses.BGP.getAddress() ).setValue(0xFC);
+        getWord(ReservedAddresses.BGP .getAddress()).setValue(0xFC);
         getWord(ReservedAddresses.OBP0.getAddress()).setValue(0xFF);
         getWord(ReservedAddresses.OBP1.getAddress()).setValue(0xFF);
 
         //Debug Purposes LY
-        //getByte(ReservedAddresses.LY.getAddress()).setValue(0x90);
+        getWord(ReservedAddresses.LY  .getAddress()).setValue(0x90);
     }
 
     /**

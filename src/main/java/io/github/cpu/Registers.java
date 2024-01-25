@@ -22,7 +22,7 @@ public class Registers {
     /**
      * Stores an Array with the possible register names (8 registers)
      */
-    private final String[] registerNames = {"A", "B", "C", "D", "E", "F", "H", "L"};
+    private final String[] registerNames = {"A", "F", "B", "C", "D", "E", "H", "L"};
 
     /**
      * Stores all the registers with their associated name (registers are kept
@@ -58,7 +58,10 @@ public class Registers {
         flags = new Flags(bus);
 
         for(String name : registerNames)
-            registers.put(name, new Word());
+            if(!name.equals("F"))
+                registers.put(name, new Word());
+
+        registers.put("F", flags.getRegister());
 
         initRegisters();
     }
@@ -77,7 +80,7 @@ public class Registers {
      *
      * @return program counter value
      */
-    public char getProgramCounter() {
+    public int getProgramCounter() {
         return programCounter;
     }
 
@@ -104,7 +107,7 @@ public class Registers {
      *
      * @return stack pointer value
      */
-    public char getStackPointer() {
+    public int getStackPointer() {
         return stackPointer;
     }
 
@@ -133,7 +136,6 @@ public class Registers {
      * @return word representing given registers name
      */
     public Word getRegister(String register) {
-        if(register.equals("F")) return flags.getRegister();
         return registers.get(register);
     }
 
@@ -144,7 +146,6 @@ public class Registers {
      * @param value to assign
      */
     public void setRegister(String register, int value) {
-        if(register.equals("F")) flags.setValue(value);
         registers.get(register).setValue(value);
     }
 
@@ -251,8 +252,8 @@ public class Registers {
 
         for(String register : registerNames)
             stringBuilder.append(register).append(": ")
-                    .append(String.format("%02X", registers.get(register).getValue()))
-                    .append(" ");
+                .append(String.format("%02X", registers.get(register).getValue()))
+                .append(" ");
 
         stringBuilder.append("SP: ").
                 append(String.format("%04X", (int) stackPointer)).append(" ");

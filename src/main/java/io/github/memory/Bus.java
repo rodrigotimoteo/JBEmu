@@ -137,6 +137,13 @@ public class Bus {
         return memory.getWord(address);
     }
 
+    /**
+     * Dumps all the memory as print statement
+     */
+    public void requestMemoryDump() {
+        System.out.println(memory);
+    }
+
     //CPU Interaction Methods
 
     /**

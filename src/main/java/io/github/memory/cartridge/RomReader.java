@@ -61,7 +61,7 @@ public class RomReader {
     public void loadRom(File romFile) throws IOException{
         try {
             romContent = Files.readAllBytes(romFile.toPath());
-        } catch (IOException ioException) {
+        } catch (IOException exception) {
             throw new IOException("Error Reading ROM");
         }
     }
@@ -103,7 +103,7 @@ public class RomReader {
         int cartridgeType = romContent[ReservedAddresses.CARTRIDGE_TYPE.getAddress()];
 
         switch (cartridgeType) {
-            case 0x00, 0x08, 0x09 -> {
+            case 0x00, 0x08, 0x09 -> { //No MBC (MBC0)
                 return new MBC0(getRomSize(), getRamSize(), romContent);
             }
             case 0x01, 0x02, 0x03 -> { //MBC1

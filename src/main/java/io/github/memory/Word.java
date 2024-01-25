@@ -87,7 +87,7 @@ public class Word implements BitOperations {
         if(bit < 0 || bit > 7)
             throw new IllegalArgumentException("Invalid bit");
 
-        return (getValue() & (1 << bit) >> bit) != 0;
+        return (getValue() & (1 << bit)) != 0;
     }
 
     /**

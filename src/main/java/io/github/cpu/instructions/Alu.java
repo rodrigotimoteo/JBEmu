@@ -63,7 +63,7 @@ public class Alu {
      * @return status of the zero flag (1 if true 0 otherwise)
      */
     private int checkZero(int value1) {
-        if(value1 == 0x00) return 1;
+        if((value1 & 0xFF) == 0x00) return 1;
         else return 0;
     }
 
@@ -502,7 +502,7 @@ public class Alu {
      */
     public void inc(String register) {
         Word valueN = (Word)
-                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{register});
 
         Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
         int valueNValue = valueN.getValue();
@@ -537,7 +537,7 @@ public class Alu {
 
     public void dec(String register) {
         Word valueN = (Word)
-                bus.getFromCPU(Bus.GET_REGISTER, new String[]{"A"});
+                bus.getFromCPU(Bus.GET_REGISTER, new String[]{register});
 
         Flags flags = (Flags) bus.getFromCPU(Bus.GET_FLAGS, null);
         int valueNValue = valueN.getValue();
@@ -630,7 +630,7 @@ public class Alu {
         int halfCarry = checkHalfCarryAdd(value, stackPointer, 0);
         int carry = ((((stackPointer & 0xFF) + (value & 0xFF)) & 0x100) == 0x100) ? 1 : 0;
 
-        valueSigned = (stackPointer + value) & 0xFFFF;
+        valueSigned = (stackPointer + valueSigned) & 0xFFFF;
 
         flags.setFlags(0, 0, halfCarry, carry);
 

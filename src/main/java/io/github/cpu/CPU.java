@@ -1,7 +1,11 @@
 package io.github.cpu;
 
+import io.github.cpu.instructions.Decoder;
 import io.github.memory.Bus;
 import io.github.memory.Word;
+
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 
 /**
  * Represents the Central Processing Unit of the emulator an 8-bit 8080-like
@@ -11,6 +15,11 @@ import io.github.memory.Word;
  */
 
 public class CPU {
+
+    /**
+     * Debug logger
+     */
+    private PrintStream debug;
 
     /**
      * Stores a reference to the bus used to communicate with other components
@@ -27,7 +36,15 @@ public class CPU {
      */
     private final Timers timers;
 
+    /**
+     * Stores a reference to the cpu interrupts object
+     */
     private final Interrupts interrupts;
+
+    /**
+     * Stores a reference to the cpu decoder object
+     */
+    private final Decoder decoder;
 
     /**
      * Indicates whether it's intended to run on Color Game Boy mode or not
@@ -49,7 +66,7 @@ public class CPU {
      *
      * @param bus reference to this instances bus
      */
-    public CPU(Bus bus) {
+    public CPU(Bus bus) throws FileNotFoundException {
         this.bus = bus;
 
         cgb = bus.isCgb();
@@ -57,13 +74,43 @@ public class CPU {
         registers   = new Registers(bus);
         timers      = new Timers(bus);
         interrupts  = new Interrupts(bus);
+        decoder     = new Decoder(bus);
+
+        if(true) {
+            debug = new PrintStream("test.txt");
+            PrintStream console = System.out;
+            System.setOut(debug);
+        }
     }
 
     /**
      * Executes a CPU Cycle
      */
     public void tick() {
+//        if(registers.getProgramCounter() == 0xC000) {
+//            bus.requestMemoryDump();
+//            System.exit(0);
+//        }
 
+        System.out.println(registers);
+
+        if(!isStopped()) {
+            if(!isHalted()) {
+                fetchOperation();
+
+                boolean imeChange = interrupts.requestedInterruptChange();
+                int interruptChangeCounter = timers.getInterruptChangedCounter();
+                int machineCycles = timers.getMachineCycles();
+
+                if (imeChange && interruptChangeCounter < machineCycles) {
+                    interrupts.triggerIMEChange();
+                }
+
+            } else
+                timers.tick();
+
+            interrupts.handleInterrupt();
+        }
     }
 
     /**
@@ -73,7 +120,13 @@ public class CPU {
     private void fetchOperation() {
         int programCounter = registers.getProgramCounter();
 
-
+        if(interrupts.isHaltBug()) {
+            decoder.decode(programCounter);
+            registers.incrementProgramCounter(-1);
+            interrupts.disableHaltBug();
+        } else {
+            decoder.decode(bus.getValue(programCounter));
+        }
     }
 
     /**

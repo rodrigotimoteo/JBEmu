@@ -86,6 +86,13 @@ class WordTest {
         assertTrue(word.testBit(bit));
     }
 
+    @Test
+    void testBitsIf0xB0() {
+        word.setValue(0xB0);
+
+        assertTrue(word.testBit(7));
+    }
+
     /**
      * Test exception throwing for invalid bit argument in setBit method
      *

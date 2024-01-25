@@ -18,10 +18,11 @@ public class JBoy extends Thread {
 
     private boolean cgb;
 
+    private Bus bus;
+
     private CPU cpu;
 
     private PPU ppu;
-
 
     /** Constructor Method
      *
@@ -32,7 +33,7 @@ public class JBoy extends Thread {
     public JBoy() throws IOException {
         RomReader romReader = new RomReader();
 
-        File rom = new File("/Users/rodrigotimoteo/Projects/JBoyEmu/testRoms/01-special.gb");
+        File rom = new File("/Users/rodrigotimoteo/Projects/JBoyEmu/testRoms/07-jr,jp,call,ret,rst.gb");
 
         if (!rom.exists())
             throw new IllegalArgumentException("Invalid Path");
@@ -41,20 +42,21 @@ public class JBoy extends Thread {
 
         cgb = romReader.isCGB();
 
-        Bus bus = new Bus(cgb, romReader.getModule());
-        CPU cpu = new CPU(bus);
-        PPU ppu = new PPU(bus);
+        bus = new Bus(cgb, romReader.getModule());
+        cpu = new CPU(bus);
+        ppu = new PPU(bus);
 
         bus.setCpu(cpu);
         bus.setPpu(ppu);
     }
 
-
-
-
-
     @Override
     public void run() {
-
+        cpu.tick();
+        //ppu.tick();
+        while(true) {
+            int machineCycles = cpu.getTimers().getMachineCycles();
+            cpu.tick();
+        }
     }
 }

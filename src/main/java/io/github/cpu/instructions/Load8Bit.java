@@ -228,7 +228,7 @@ public class Load8Bit {
         if(AtoHL) ldTwoRegisters(2);
         else ldTwoRegistersIntoA(2);
 
-        HL = (HL - 1) & 0xffff;
+        HL = (HL - 1) & 0xFFFF;
         bus.executeFromCPU(Bus.SET_HL, new String[]{String.valueOf(HL)});
     }
 
@@ -245,7 +245,7 @@ public class Load8Bit {
         if(AtoHL) ldTwoRegisters(2);
         else ldTwoRegistersIntoA(2);
 
-        HL = (HL + 1) & 0xffff;
+        HL = (HL + 1) & 0xFFFF;
 
         bus.executeFromCPU(Bus.SET_HL, new String[]{String.valueOf(HL)});
     }
@@ -270,7 +270,8 @@ public class Load8Bit {
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
         if(Ato) bus.setValue(address, valueA);
-        else    bus.executeFromCPU(Bus.SET_REGISTER, new String[]{"A", String.valueOf(valueA)});
+        else    bus.executeFromCPU(Bus.SET_REGISTER,
+                new String[]{"A", String.valueOf(bus.getValue(address))});
 
         bus.executeFromCPU(Bus.INCR_PC, new String[]{"2"});
     }

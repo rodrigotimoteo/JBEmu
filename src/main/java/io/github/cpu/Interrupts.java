@@ -76,8 +76,47 @@ public class Interrupts {
 
     }
 
+    /**
+     * Used to request a new interrupt state change (IME change)
+     *
+     * @param changeToState which state to change the IME (true if enabling,
+     *                      false otherwise)
+     */
     public void setInterruptChange(boolean changeToState) {
         interruptChange = true;
         this.changeToState = changeToState;
+    }
+
+    /**
+     * Checks if a IME change should be performed
+     *
+     * @return if there is IME change request
+     */
+    public boolean requestedInterruptChange() {
+        return interruptChange;
+    }
+
+    /**
+     * If we have a requested IME change this performs that operation
+     */
+    public void triggerIMEChange() {
+        interruptMasterEnable = changeToState;
+        interruptChange = false;
+    }
+
+    /**
+     * Checks if the halt bug is currently active
+     *
+     * @return halt bug state
+     */
+    public boolean isHaltBug() {
+        return haltBug;
+    }
+
+    /**
+     * Disables the halt bug
+     */
+    public void disableHaltBug() {
+        haltBug = false;
     }
 }

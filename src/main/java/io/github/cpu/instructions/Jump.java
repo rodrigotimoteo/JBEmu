@@ -2,6 +2,7 @@ package io.github.cpu.instructions;
 
 import io.github.cpu.Flags;
 import io.github.memory.Bus;
+import io.github.memory.Word;
 
 /**
  * Class responsible for handling all things that deal with program counter changes
@@ -210,7 +211,7 @@ public class Jump {
         bus.executeFromCPU(Bus.TICK_TIMERS, null);
 
         if(condition) ret();
-        bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
+        else bus.executeFromCPU(Bus.INCR_PC, new String[]{"1"});
     }
 
     /**

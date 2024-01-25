@@ -121,7 +121,9 @@ public class MemoryModule implements MemoryManipulation {
      * memory
      */
     private void initMemory() {
-        Arrays.stream(memory).forEach(row -> Arrays.fill(row, new Word()));
+        for(int i = 0; i < numberOfBanks; i++)
+            for(int j = 0; j < memory[i].length; j++)
+                memory[i][j] = new Word();
     }
 
     /**
@@ -131,8 +133,12 @@ public class MemoryModule implements MemoryManipulation {
      * @param size of each bank
      */
     private void assignMemory(byte[] content, int size) {
-        IntStream.range(0, content.length).forEach(i -> memory[i / size][i % size]
-                .setValue(content[i]));
+        int i = 0;
+
+        for(byte word : content) {
+            memory[i / size][i % size].setValue(word);
+            i++;
+        }
     }
 
     /**
@@ -249,6 +255,17 @@ public class MemoryModule implements MemoryManipulation {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        return "To Be Implemented";
+        stringBuilder.append("0 ");
+        for(int i = 0; i < numberOfBanks; i++) {
+            for(int j = 0; j < memory[i].length; j++)
+                if(i % 16 == 0 && i != 0) {
+                    stringBuilder.append(" \n");
+                    stringBuilder.append(Integer.toHexString(i)).append(" ");
+                    stringBuilder.append(Integer.toHexString(memory[i][j].getValue())).append(" ");
+                } else
+                    stringBuilder.append(Integer.toHexString(memory[i][j].getValue())).append(" ");
+        }
+
+        return stringBuilder.toString();
     }
 }
