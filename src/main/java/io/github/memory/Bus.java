@@ -1,6 +1,8 @@
 package io.github.memory;
 
 import io.github.cpu.CPU;
+import io.github.display.Controller;
+import io.github.display.Display;
 import io.github.ppu.PPU;
 
 /**
@@ -55,6 +57,16 @@ public class Bus {
     private PPU ppu;
 
     /**
+     * Stores a reference to the display class (gui management)
+     */
+    private Display display;
+
+    /**
+     * Stores a reference to the display's key listener
+     */
+    private Controller controller;
+
+    /**
      * Stores a reference to the Memory Manager
      */
     private final MemoryManager memory;
@@ -94,6 +106,26 @@ public class Bus {
      */
     public void setPpu(PPU ppu) {
         if(this.ppu == null) this.ppu = ppu;
+    }
+
+    /**
+     * Setter to assign the bus display access
+     *
+     * @param display reference for this instance's display
+     */
+    public void setDisplay(Display display) {
+        if(this.display == null)
+            this.display = display;
+    }
+
+    /**
+     * Setter to assign the bus controller access
+     *
+     * @param controller reference for this instance's controller
+     */
+    public void setController(Controller controller) {
+        if(this.controller == null)
+            this.controller = controller;
     }
 
     /**

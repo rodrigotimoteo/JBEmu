@@ -26,7 +26,7 @@ public enum ReservedAddresses {
     WRAM_END        (0xE000),
     OAM_START       (0xFE00),
     OAM_END         (0xFEA0),
-    IO_START        (0xFF00),
+    JOYP            (0xFF00),
     SB              (0xFF01),
     SC              (0xFF02),
     DIV             (0xFF04),

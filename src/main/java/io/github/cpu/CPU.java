@@ -76,23 +76,20 @@ public class CPU {
         interrupts  = new Interrupts(bus);
         decoder     = new Decoder(bus);
 
-        if(true) {
-            debug = new PrintStream("test.txt");
-            PrintStream console = System.out;
-            System.setOut(debug);
-        }
+        //DEBUG USE ONLY
+//        if(true) {
+//            debug = new PrintStream("test.txt");
+//            PrintStream console = System.out;
+//            System.setOut(debug);
+//        }
     }
 
     /**
      * Executes a CPU Cycle
      */
     public void tick() {
-//        if(registers.getProgramCounter() == 0xC000) {
-//            bus.requestMemoryDump();
-//            System.exit(0);
-//        }
-
-        System.out.println(registers);
+        //DEBUG USE ONLY
+//        System.out.println(registers);
 
         if(!isStopped()) {
             if(!isHalted()) {

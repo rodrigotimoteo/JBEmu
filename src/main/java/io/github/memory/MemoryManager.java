@@ -2,8 +2,6 @@ package io.github.memory;
 
 import io.github.memory.cartridge.RomModule;
 
-import java.util.HashMap;
-
 /**
  * Class responsible for managing everything interacting directly with the
  * emulator memory space, keeps all other modules and manages addresses
@@ -99,7 +97,7 @@ public class MemoryManager implements MemoryManipulation {
             wram = new MemoryModule(0x1000, 2, 0xC000, 2);
 
         oam = new MemoryModule(0xA0, ReservedAddresses.OAM_START.getAddress());
-        bottomRegisters = new MemoryModule(0x100, ReservedAddresses.IO_START.getAddress());
+        bottomRegisters = new MemoryModule(0x100, ReservedAddresses.JOYP.getAddress());
 
         init();
     }
@@ -125,7 +123,7 @@ public class MemoryManager implements MemoryManipulation {
             return; //THIS SECTION IS ECHO RAM SHOULD NOT BE USED
         else if (address < ReservedAddresses.OAM_END.getAddress())
             oam.setValue(address, value);
-        else if (address < ReservedAddresses.IO_START.getAddress())
+        else if (address < ReservedAddresses.JOYP.getAddress())
             return; //THIS SECTION IS PROHIBITED
         else
             handleBottomRegisters(address, value);
@@ -139,6 +137,11 @@ public class MemoryManager implements MemoryManipulation {
      * @param value to assign to the word
      */
     private void handleBottomRegisters(int address, int value) {
+        if     (address == ReservedAddresses.DIV.getAddress())
+            bottomRegisters.setValue(address, 0x00);
+        else if(address == ReservedAddresses.LY.getAddress())
+            bottomRegisters.setValue(address, 0x00);
+
         bottomRegisters.setValue(address, value);
     }
 
@@ -165,7 +168,7 @@ public class MemoryManager implements MemoryManipulation {
             return wram.getValue(address - 0x2000);
         else if (address < ReservedAddresses.OAM_END.getAddress())
             return oam.getValue(address);
-        else if (address < ReservedAddresses.IO_START.getAddress())
+        else if (address < ReservedAddresses.JOYP.getAddress())
             return 0; //THIS SECTION SHOULD NOT BE USED
         else
             return bottomRegisters.getValue(address);
@@ -195,7 +198,7 @@ public class MemoryManager implements MemoryManipulation {
             return wram.getWord(address - 0x2000);
         else if (address < ReservedAddresses.OAM_END.getAddress())
             return oam.getWord(address);
-        else if (address < ReservedAddresses.IO_START.getAddress())
+        else if (address < ReservedAddresses.JOYP.getAddress())
             return null; //THIS SECTION SHOULD NOT BE USED
         else
             return bottomRegisters.getWord(address);
