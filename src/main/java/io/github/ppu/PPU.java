@@ -1,5 +1,6 @@
 package io.github.ppu;
 
+import io.github.cpu.Interrupts;
 import io.github.memory.Bus;
 
 /**
@@ -45,12 +46,13 @@ public class PPU {
 
         cgb = bus.isCgb();
 
-        drawer    = new Drawer(bus, null);
+        drawer    = new Drawer(bus);
         registers = new Registers(bus);
         timers    = new Timers(bus);
     }
 
     public void tick() {
+        timers.tick();
 
     }
 

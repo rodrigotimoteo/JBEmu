@@ -14,11 +14,23 @@ public class Interrupts {
     /**
      * Stores the types of interrupts that can be triggered
      */
-    public static final int VBLANK_INTERRUPT = 0;
-    public static final int STAT_INTERRUPT   = 1;
-    public static final int TIMER_INTERRUPT  = 2;
-    public static final int SERIAL_INTERRUPT = 3;
-    public static final int JOYPAD_INTERRUPT = 4;
+    public enum InterruptTypes {
+        VBLANK_INT(0),
+        STAT_INT(1),
+        TIMER_INT(2),
+        SERIAL_INT(3),
+        JOYPAD_INT(4);
+
+        private final int value;
+
+        InterruptTypes(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
 
     /**
      * Stores a reference to the bus to communicate with other components
@@ -36,9 +48,10 @@ public class Interrupts {
     private final Word IF_REGISTER;
 
     /**
-     * Stores whether the CPU is currently reacting to interrupts
+     * Stores whether the CPU is currently reacting to interrupts, disabled by
+     * default
      */
-    private boolean interruptMasterEnable;
+    private boolean interruptMasterEnable = false;
 
     /**
      * Stores a test for the bug that exists on the halt mode of the cpu, that
@@ -73,7 +86,38 @@ public class Interrupts {
     }
 
     public void handleInterrupt() {
+        if(interruptMasterEnable) {
+            int availableInterrupts = decodeServiceableInterrupts();
 
+            if(availableInterrupts != 0) {
+
+
+            }
+        }
+
+
+    }
+
+    /**
+     * Decodes the interrupts being request, this is obtained from the IE and IF
+     * register
+     *
+     * @return value of IE register and IF register after and bit operation
+     */
+    private int decodeServiceableInterrupts() {
+        return IE_REGISTER.getValue() & IF_REGISTER.getValue();
+    }
+
+    /**
+     * Request an interrupt based on given value (values corresponds to enum
+     * structure at top of this class)
+     *
+     * @param interrupt which interrupt (bit) to set in IF flag
+     */
+    public void requestInterrupt(int interrupt) {
+        if(interrupt < 0 || interrupt > 4) return;
+
+        IF_REGISTER.setBit(interrupt);
     }
 
     /**

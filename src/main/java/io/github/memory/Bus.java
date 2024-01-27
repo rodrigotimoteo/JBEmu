@@ -5,6 +5,8 @@ import io.github.display.Controller;
 import io.github.display.Display;
 import io.github.ppu.PPU;
 
+import java.awt.image.BufferedImage;
+
 /**
  * Responsible for interactions between the various system components and
  * storing the main memory
@@ -42,8 +44,9 @@ public class Bus {
     public static final int SET_HL          = 9;
     public static final int DISABLE_INT     = 10;
     public static final int ENABLE_INT      = 11;
-    public static final int HALT            = 12;
-    public static final int STOP            = 13;
+    public static final int REQUEST_INT     = 12;
+    public static final int HALT            = 13;
+    public static final int STOP            = 14;
 
 
     /**
@@ -233,6 +236,8 @@ public class Bus {
                     .setHL(Integer.parseInt(parameters[0]));
             case DISABLE_INT    -> cpu.interruptChange(false);
             case ENABLE_INT     -> cpu.interruptChange(true);
+            case REQUEST_INT    -> cpu.getInterrupts()
+                    .requestInterrupt(Integer.parseInt(parameters[0]));
             case HALT           -> cpu.setHalted(true);
             case STOP           -> cpu.setStopped(true);
         };
@@ -253,6 +258,19 @@ public class Bus {
         int upperAddress = getValue(programCounter + 2) << 8;
 
         return upperAddress + lowerAddress;
+    }
+
+    //PPU Interaction Methods
+
+    //Display Interaction Methods
+
+    /**
+     * Buffered Image getter method
+     *
+     * @return buffered image reference stored in the Display
+     */
+    public BufferedImage getImage() {
+        return display.getBufferedImage();
     }
 }
 

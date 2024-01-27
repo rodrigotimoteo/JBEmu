@@ -19,6 +19,9 @@ public class Display extends JPanel {
      */
     private final Bus bus;
 
+    /**
+     * Stores the display's buffered image
+     */
     private final BufferedImage bufferedImage;
 
     /**
@@ -34,5 +37,14 @@ public class Display extends JPanel {
 
         this.bus = bus;
         bufferedImage = configuration.createCompatibleImage(WIDTH, HEIGHT);
+    }
+
+    /**
+     * Buffered Image getter method
+     *
+     * @return buffered image object
+     */
+    public BufferedImage getBufferedImage() {
+        return bufferedImage;
     }
 }

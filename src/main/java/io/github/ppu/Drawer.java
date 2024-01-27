@@ -2,6 +2,8 @@ package io.github.ppu;
 
 import io.github.memory.Bus;
 
+import java.awt.image.BufferedImage;
+
 /**
  *
  *
@@ -11,23 +13,23 @@ import io.github.memory.Bus;
 public class Drawer {
 
     /**
-     *
+     * Stores a reference to the bus
      */
     private final Bus bus;
 
     /**
      * Stores the matrix used to keep the pixels to form each frame
      */
-    private final int[][] colorMatrix;
+    private final BufferedImage bufferedImage;
 
     /**
      *
      *
      * @param bus reference to this instances bus
      */
-    public Drawer(Bus bus, int[][] colorMatrix) {
+    public Drawer(Bus bus) {
         this.bus = bus;
-        this.colorMatrix = colorMatrix;
+        this.bufferedImage = bus.getImage();
     }
 
     /**
