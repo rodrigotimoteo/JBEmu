@@ -9,6 +9,7 @@ package io.github.memory;
 
 public enum ReservedAddresses {
 
+    INTERRUPT_START (0x0040),
     TITLE_START     (0x0134),
     TITLE_END       (0x0142),
     CONSOLE_TYPE    (0x0143),

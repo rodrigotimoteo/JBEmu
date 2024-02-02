@@ -14,7 +14,7 @@ public class Interrupts {
     /**
      * Stores the types of interrupts that can be triggered
      */
-    public enum InterruptTypes {
+    enum InterruptTypes {
         VBLANK_INT(0),
         STAT_INT(1),
         TIMER_INT(2),
@@ -85,16 +85,36 @@ public class Interrupts {
         IF_REGISTER = bus.getWord(ReservedAddresses.IF.getAddress());
     }
 
+    /**
+     * This method handles everything that deals directly with the execution of
+     * CPU Interrupts, as well as testing for the halt bug
+     */
     public void handleInterrupt() {
+        Word availableInterrupts = decodeServiceableInterrupts();
+
         if(interruptMasterEnable) {
-            int availableInterrupts = decodeServiceableInterrupts();
 
-            if(availableInterrupts != 0) {
+            if(availableInterrupts.getValue() != 0) {
+                bus.executeFromCPU(Bus.UNHALT, null);
+                disableIME();
 
+                bus.storePCInSP();
 
+                checkInterruptTypes(availableInterrupts);
+            }
+        } else if((Boolean) bus.getFromCPU(Bus.GET_HALTED, null)) {
+            if(availableInterrupts.getValue() != 0) {
+                bus.executeFromCPU(Bus.HALT, null);
+
+                int machineCycles     =
+                        (int) bus.getFromCPU(Bus.GET_MC, null);
+                int haltMachineCycles =
+                        (int) bus.getFromCPU(Bus.GET_HALT_MC, null);
+
+                if(machineCycles == haltMachineCycles)
+                    haltBug = true;
             }
         }
-
 
     }
 
@@ -104,8 +124,31 @@ public class Interrupts {
      *
      * @return value of IE register and IF register after and bit operation
      */
-    private int decodeServiceableInterrupts() {
-        return IE_REGISTER.getValue() & IF_REGISTER.getValue();
+    private Word decodeServiceableInterrupts() {
+        return new Word(IE_REGISTER.getValue() & IF_REGISTER.getValue());
+    }
+
+    /**
+     * Check if a specific interrupt type is ready to be executed if so, reset it
+     * in the Interrupt Flags register and return back.
+     * The 0x08 multiplication is obtained from the hardware coded PC's from where
+     * each interrupt type should jump to, they are curiously 8 address apart from
+     * each other.
+     *
+     * @param availableInterrupts Word containing the register's that are ready
+     *                            to be handled
+     */
+    private void checkInterruptTypes(Word availableInterrupts) {
+        for(InterruptTypes interrupt : InterruptTypes.values()) {
+            if(availableInterrupts.testBit(interrupt.value)) {
+                bus.executeFromCPU(Bus.SET_PC, new String[]{String.valueOf(
+                        ReservedAddresses.INTERRUPT_START.getAddress() +
+                                0x08 * interrupt.value)});
+                IF_REGISTER.resetBit(interrupt.value);
+
+                return;
+            }
+        }
     }
 
     /**
@@ -146,6 +189,10 @@ public class Interrupts {
     public void triggerIMEChange() {
         interruptMasterEnable = changeToState;
         interruptChange = false;
+    }
+
+    public void disableIME() {
+        interruptMasterEnable = false;
     }
 
     /**

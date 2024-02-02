@@ -28,6 +28,10 @@ public class Bus {
     public static final int GET_HL          = 5;
     public static final int GET_PC          = 6;
     public static final int GET_SP          = 7;
+    public static final int GET_HALTED      = 8;
+    public static final int GET_STOPPED     = 9;
+    public static final int GET_MC          = 10;
+    public static final int GET_HALT_MC     = 11;
 
     /**
      * Stores CPU Execution codes
@@ -46,7 +50,8 @@ public class Bus {
     public static final int ENABLE_INT      = 11;
     public static final int REQUEST_INT     = 12;
     public static final int HALT            = 13;
-    public static final int STOP            = 14;
+    public static final int UNHALT          = 14;
+    public static final int STOP            = 15;
 
 
     /**
@@ -173,6 +178,20 @@ public class Bus {
     }
 
     /**
+     * Stores the program counter in the stack pointer and decreases the stack
+     * pointer by 2
+     */
+    public void storePCInSP() {
+        int stackPointer   = cpu.getRegisters().getStackPointer();
+        int programCounter = cpu.getRegisters().getProgramCounter();
+
+        setValue(stackPointer - 1, (programCounter & 0xFF00) >> 8);
+        setValue(stackPointer - 2, (programCounter & 0xFF));
+
+        cpu.getRegisters().incrementStackPointer(-2);
+    }
+
+    /**
      * Dumps all the memory as print statement
      */
     public void requestMemoryDump() {
@@ -184,6 +203,7 @@ public class Bus {
     /**
      * Follows a structured table in order to retrieve information from the cpu
      * based on codes
+     * MC stands for Machine Cycle
      *
      * @param code information identifier
      * @param parameters additional information that might be required to execute
@@ -200,6 +220,10 @@ public class Bus {
             case GET_HL         -> cpu.getRegisters().getHL();
             case GET_PC         -> cpu.getRegisters().getProgramCounter();
             case GET_SP         -> cpu.getRegisters().getStackPointer();
+            case GET_HALTED     -> cpu.isHalted();
+            case GET_STOPPED    -> cpu.isStopped();
+            case GET_MC         -> cpu.getTimers().getMachineCycles();
+            case GET_HALT_MC    -> cpu.getTimers().getHaltCycleCounter();
             default ->
                     throw new IllegalStateException("Unexpected value: " + code);
         };
@@ -239,8 +263,9 @@ public class Bus {
             case REQUEST_INT    -> cpu.getInterrupts()
                     .requestInterrupt(Integer.parseInt(parameters[0]));
             case HALT           -> cpu.setHalted(true);
+            case UNHALT         -> cpu.setHalted(false);
             case STOP           -> cpu.setStopped(true);
-        };
+        }
     }
 
     /**
